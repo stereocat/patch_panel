@@ -1,6 +1,8 @@
 source 'https://rubygems.org'
 
 gem 'trema'
+gem 'bundler'
+gem 'grape'
 
 group :development, :test do
   gem 'aruba', require: false
