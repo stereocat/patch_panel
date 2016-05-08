@@ -1,6 +1,7 @@
+require 'hashie'
 require 'patch_panel_exceptions'
 require 'patch_panel_manager'
-require 'hashie'
+require 'patch_panel_flowbuilder'
 
 # Software patch-panel.
 class PatchPanel < Trema::Controller
@@ -11,6 +12,7 @@ class PatchPanel < Trema::Controller
 
   def switch_ready(dpid)
     logger.info "#switch_ready dpid=#{dpid}"
+    add_default_drop_entry(dpid)
   end
 
   # for backward compatibility (used in bin/patch_panel)
@@ -51,20 +53,29 @@ class PatchPanel < Trema::Controller
 
   private
 
+  def add_default_drop_entry(dpid)
+    # default drop (minimum priority)
+    send_flow_mod_add(dpid, priority: 0, match: Match.new)
+  end
+
   # @param [Hash,Hashie] target patch data (a flow rule)
   def add_flow_entries(target)
+    # Existance of :dpid key is guaranteed by Grape API definition.
     logger.info "#add_flow_entries, dpid=#{target[:dpid]}"
+    priority = build_priority(target)
+    match = build_match_condition(target)
+    actions = build_action_conditions(target)
     send_flow_mod_add(target[:dpid],
-                      match: Match.new(in_port: target[:inport]),
-                      actions: SendOutPort.new(target[:outport]))
+                      priority: priority, match: match, actions: actions)
     @ppmgr.append target
   end
 
   # @param [Hash,Hashie] target patch data (a flow rule)
   def delete_flow_entries(target)
+    # Existance of :dpid key is guaranteed by Grape API definition.
     logger.info "#delete_flow_entries, dpid=#{target[:dpid]}"
-    send_flow_mod_delete(target[:dpid],
-                         match: Match.new(in_port: target[:inport]))
+    match = build_match_condition(target)
+    send_flow_mod_delete(target[:dpid], match: match)
     @ppmgr.delete target
   end
 end

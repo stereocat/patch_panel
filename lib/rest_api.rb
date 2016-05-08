@@ -21,6 +21,10 @@ end
 class RestApi < Grape::API
   format :json
 
+  PRIORITY_RANGE = 0..0xffff
+  MAC_ADDR_REGEXP = /^(?:[[:xdigit:]]{2}([-:]))(?:[[:xdigit:]]{2}\1){4}[[:xdigit:]]{2}$/
+  VLAN_VID_RANGE = 1..4095
+
   helpers do
     def rest_api
       yield
@@ -41,7 +45,7 @@ class RestApi < Grape::API
 
   desc 'Create a patch'
   params do
-    optional :priority, type: Integer, values: 0..65535,
+    optional :priority, type: Integer, values: PRIORITY_RANGE,
              desc: 'Priority of the flow rule.'
     requires :dpid, type: Integer, desc: 'Datapath ID.'
     requires :inport, type: Integer, desc: 'Inbound port number. (Match)'
@@ -50,22 +54,33 @@ class RestApi < Grape::API
              desc: 'Array of outbound port number. (Action)'
     exactly_one_of :outport, :outports
     # if :eth_src and/or :eth_dst exists, the flow rule is for layer2-patch
-    mac_addr_regexp = /^(?:[[:xdigit:]]{2}([-:]))(?:[[:xdigit:]]{2}\1){4}[[:xdigit:]]{2}$/
-    optional :eth_src, type: String, regexp: mac_addr_regexp,
+    optional :eth_src, type: String, regexp: MAC_ADDR_REGEXP,
              desc: 'Inbound source MAC address. (Match)'
-    optional :eth_dst, type: String, regexp: mac_addr_regexp,
+    optional :eth_dst, type: String, regexp: MAC_ADDR_REGEXP,
              desc: 'Inbound destination MAC address. (Match)'
-    vlan_vid_range = 1..4095
-    optional :vlan_vid, type: Integer, values: vlan_vid_range,
+    optional :vlan_vid, type: Integer, values: VLAN_VID_RANGE,
              desc: 'Inbound VLAN ID. (Match)'
-    optional :set_vlan, type: Integer, values: vlan_vid_range,
+    optional :set_vlan, type: Integer, values: VLAN_VID_RANGE,
              desc: 'Outbound VLAN ID. (Action)'
+    # used like that: if match :vlan_vid then :pop_vlan
     optional :pop_vlan, type: Boolean, desc: 'Outbound VLAN ID none. (Action)'
   end
   put '/patch/flow' do
     puts "PUT #{params.to_s}" # debug
     # `params' is instance of Hashie
     rest_api { PatchPanel.create_patch_with(params) }
+  end
+
+  desc 'Delete a patch'
+  params do
+    requires :dpid, type: Integer, desc: 'Datapath ID.'
+    requires :inport, type: Integer, desc: 'Inbound port number. (Match)'
+    optional :eth_src, type: String, regexp: MAC_ADDR_REGEXP,
+             desc: 'Inbound source MAC address. (Match)'
+    optional :eth_dst, type: String, regexp: MAC_ADDR_REGEXP,
+             desc: 'Inbound destination MAC address. (Match)'
+    optional :vlan_vid, type: Integer, values: VLAN_VID_RANGE,
+             desc: 'Inbound VLAN ID. (Match)'
   end
   delete '/patch/flow' do
     puts "DELETE #{params.to_s}" # debug
