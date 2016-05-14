@@ -25,6 +25,10 @@ class RestApi < Grape::API
   MAC_ADDR_REGEXP = /^(?:[[:xdigit:]]{2}([-:]))(?:[[:xdigit:]]{2}\1){4}[[:xdigit:]]{2}$/
   VLAN_VID_RANGE = 1..4095
 
+  before do
+    header 'Access-Control-Allow-Origin', '*'
+  end
+
   helpers do
     def rest_api
       yield
@@ -36,6 +40,39 @@ class RestApi < Grape::API
 #    rescue StandardError => standard_error
 #      error! standard_error.message, 400
     end
+  end
+
+  desc 'DocumentRoot'
+  get '/' do
+    content_type 'text/html'
+    file 'public/index.html'
+  end
+
+  desc 'CSS'
+  get '/css/base.css' do
+    content_type 'text/css'
+    file 'public/css/base.css'
+  end
+
+  desc 'javaScript'
+  get '/js/topology_graph.js' do
+    content_type 'text/javascript'
+    file 'public/js/topology_graph.js'
+  end
+
+  desc 'Get all switches as list'
+  get '/patch/switches' do
+    rest_api { PatchPanel.topology.switches.map(&:to_hex) }
+  end
+
+  desc 'Get all ports of a switch as list'
+  get '/patch/switch/:dpid/ports' do
+    # TODO: ports of a switch
+  end
+
+  desc 'Get all links as list'
+  get '/patch/physical_topology' do
+    rest_api { PatchPanel.topology.physical_topology }
   end
 
   desc 'Get all patch as list'
