@@ -11,6 +11,7 @@ class PatchPanel < Trema::Controller
 
   attr_reader :topology
 
+  # TODO: LLDP Packet-in control (very ad-hoc...)
   LLDP_DESTINATION_MAC_ADDRESS = "01:80:c2:00:00:0e"
 
   def start(_args)
@@ -57,7 +58,7 @@ class PatchPanel < Trema::Controller
     if packet_in.lldp?
       @topology.maybe_add_link Link.new(dpid, packet_in)
     else
-      @topology.maybe_add_host(packet_in.source_mac,
+      @topology.maybe_add_host(packet_in.source_mac_address,
                                packet_in.source_ip_address,
                                dpid,
                                packet_in.in_port)
@@ -94,6 +95,7 @@ class PatchPanel < Trema::Controller
   end
 
   # @param [Hash,Hashie] target patch flow rules
+  # TODO: implement flow-rule deletion not only exact match but also partial-match
   def delete_patch_with(target)
     unless @ppmgr.include?(target)
       raise PatchNotFoundError, 'Target patch not found'
@@ -106,7 +108,35 @@ class PatchPanel < Trema::Controller
     @ppmgr.list.map {|item| item.data }
   end
 
+  def physical_links
+    @topology.physical_links
+  end
+
+  def logical_wires
+    merge_graph_data(@ppmgr.logical_wires)
+  end
+
+  def whole_topology
+    merge_graph_data(physical_links + logical_wires)
+  end
+
   private
+
+  def merge_graph_data(list)
+    merged_list = []
+    list.each do |each|
+      found_item = merged_list.find do |item|
+        item[:name] == each[:name]
+      end
+      if found_item
+        found_item[:imports] = found_item[:imports] + each[:imports]
+        found_item[:imports].uniq!
+      else
+        merged_list.append each
+      end
+    end
+    merged_list
+  end
 
   def send_lldp(dpid, ports)
     ports.each do |each|

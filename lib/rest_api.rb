@@ -71,8 +71,18 @@ class RestApi < Grape::API
   end
 
   desc 'Get all links as list'
-  get '/patch/physical_topology' do
-    rest_api { PatchPanel.topology.physical_topology }
+  get '/patch/physical_links' do
+    rest_api { PatchPanel.physical_links }
+  end
+
+  desc 'Get all patch-connect rules in switch internal'
+  get '/patch/logical_wires' do
+    rest_api { PatchPanel.logical_wires }
+  end
+
+  desc 'Get whole physical/logical connections'
+  get 'patch/whole_topology' do
+    rest_api { PatchPanel.whole_topology }
   end
 
   desc 'Get all patch as list'

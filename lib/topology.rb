@@ -79,7 +79,7 @@ class Topology
     @graph.route(ip_source_address, ip_destination_address)
   end
 
-  def physical_topology
+  def physical_links
     list = @links.map { |each| each.to_hash }
     list.flatten
   end

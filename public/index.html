@@ -5,12 +5,19 @@
     <meta charset="utf-8">
     <title>D3 Page Template</title>
     <script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
+    <script type="text/javascript" src="/js/topology_graph.js"></script>
     <link rel="stylesheet" href="/css/base.css">
   </head>
   <body>
     <p>Original D3.js script is here:
       <a href="https://bl.ocks.org/mbostock/7607999">Hierarchical Edge Bundling - bl.ocks.org</a>
     </p>
-    <script src="/js/topology_graph.js"></script>
+    <script type="text/javascript">
+      <!--
+      //createGraph("/patch/physical_links");
+      //createGraph("/patch/logical_wires");
+      createGraph("/patch/whole_topology");
+      // -->
+    </script>
   </body>
 </html>

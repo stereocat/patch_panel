@@ -1,3 +1,15 @@
+require 'link'
+
+class WireLink < Link
+  # logical wire (switch-internal port-to-port mapping rule)
+  def initialize(dpid, port_a, port_b)
+    @dpid_a = dpid
+    @dpid_b = dpid
+    @port_a = port_a
+    @port_b = port_b
+  end
+end
+
 class PatchData
   attr_reader :data
 
@@ -31,6 +43,7 @@ class PatchData
 end
 
 class PatchPanelManager
+
   attr_reader :list
 
   def initialize
@@ -63,6 +76,19 @@ class PatchPanelManager
       return true if item.layer_conflict?(target)
     end
     false
+  end
+
+  # construct swiwtch-internal port-to-port mapping rule (logical wire)
+  def logical_wires
+    list = []
+    @list.each do |flow|
+      ports = flow.data[:outports] ? flow.data[:outports] : [flow.data[:outport]]
+      ports.each do |port|
+        wire_link = WireLink.new(flow.data[:dpid], flow.data[:inport], port)
+        list.append(wire_link.to_hash.flatten)
+      end
+    end
+    list.flatten
   end
 
   private
